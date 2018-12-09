@@ -1,0 +1,2 @@
+- Faire afficher le mot quand on perd
+- Calculer le score et l'afficher
