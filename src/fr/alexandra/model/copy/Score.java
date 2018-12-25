@@ -1,4 +1,4 @@
-package fr.alexandra.model;
+package fr.alexandra.model.copy;
 
 import fr.alexandra.controler.Controler;
 
