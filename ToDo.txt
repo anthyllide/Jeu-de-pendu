@@ -1,5 +1,2 @@
 - Faire afficher le mot quand on perd
 - Calculer le score et l'afficher
-- Créer bouton "continuer quand on gagne" ou nouvelle partie si on perd
-- Créer class score serialized - enregistrer dans un fichier
-- Créer une pop up pour inscrire le nom de la partie

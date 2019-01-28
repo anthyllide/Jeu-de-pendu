@@ -18,15 +18,15 @@ public class Word {
 	private int numberLetters;
 	
 	public Word() {	
-		//on génère une nouvelle ligne
-		setLine();
-		//lecture du mot correspondant à ligne
-		selectOneWord(getLine());
-		//split du mot
-		splitWord(getWord());
-		//comptage du nombre de lettres
-		countLetters(getLetters());
-		
+			
+			//on génère une nouvelle ligne
+			setLine();
+			//lecture du mot correspondant à ligne
+			selectOneWord(getLine());
+			//split du mot
+			splitWord(getWord());
+			//comptage du nombre de lettres 
+			countLetters(getLetters());
 	}
 	
 	public String getWord() {
@@ -85,6 +85,7 @@ public class Word {
 		
 			this.word = str.toUpperCase();
 			
+			
 		} catch (FileNotFoundException e) {
 
 		    e.printStackTrace();
@@ -105,7 +106,12 @@ public class Word {
 	private void countLetters(List letters) {
 		
 		int number = letters.size();
-		this.numberLetters = number;
+		
+		if(number > 15) {
+			new Word();
+		} else {
+			this.numberLetters = number;
+		}		
 	}
 		 
 }

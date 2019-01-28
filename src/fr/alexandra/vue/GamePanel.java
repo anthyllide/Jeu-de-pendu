@@ -13,7 +13,9 @@ import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.border.Border;
 
@@ -30,14 +32,17 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 	private JLabel hangManImage;
 	private JLabel scoreLabel;
 	private JLabel scoreCumulLabel;
-	private JLabel stateLabel;
+	private JLabel gameOver;
+	private JLabel nbWordFoundLabel;
 	private String wordGame = "";
 	private Word word;
 	private Controler controler;
 	private Score scoreObject;
 	private int score;
-	private int cumulScore;
+	private int scoreCumul;
 	private int nbError;
+	private int nbLetters;
+	private int nbWordFound;
 	
 	private String textTitle = "A vous de jouer !";
 	private String textWordGame;
@@ -91,20 +96,42 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 	//Création du JPanel contenant le score, le gameArea et le pendu
 	private JPanel central = new JPanel();
 	
-	public GamePanel(Word word) {
+	public GamePanel(Word w) {
 		
 		//Instanciation de l'objet controleur	
-		Controler controler = new Controler(word);
-		
-		this.controler = controler;
-						
+		this.controler = new Controler(w);
 		this.wordGame = controler.getHideWord();
 		this.score = controler.getScore();
+		this.word = w;
+		this.nbLetters = controler.getNbLetters();
+		this.scoreCumul = controler.getScoreCumul();
+		this.nbWordFound = 0;
+			
+		System.out.println("mot à chercher bis : " + controler.getWordFound());
+		System.out.println("nb erreur bis :" + controler.getNbError());
+		System.out.println("Etat du jeu :" + controler.getGameState());
+		System.out.println("Constructeur label nb lettres :" + nbLetters);
+		System.out.println("Constructeur mot à trouver :" + word.getWord());
 		
 		controler.addObserver(this);
 		
 		displayGamePanel(word);
-				
+					
+	}
+	
+	public GamePanel(Word w, int sc, int nbW) {
+		
+		//Instanciation de l'objet controleur	
+		this.controler = new Controler(w,sc,nbW);
+		this.wordGame = controler.getHideWord();
+		this.score = controler.getScore();
+		this.scoreCumul = controler.getScoreCumul();
+		this.word = w;
+		this.nbWordFound = nbW;
+		this.nbLetters = controler.getNbLetters();
+		
+		controler.addObserver(this);
+		displayGamePanel(word);							
 	}
 	
 	 @Override
@@ -114,16 +141,68 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 			Font font5 = new Font("Arial", Font.BOLD, 16);
 			
 			if(state == 1) {
-				clavierEnabled();
-				numberLetters.setFont(font5);
-				numberLetters.setForeground(new Color(237,0,0));
-				numberLetters.setText("** GAGNÉ ** ");
 				
-			} else if (state == 2) {
-				clavierEnabled();
-				numberLetters.setFont(font5);
-				numberLetters.setForeground(new Color(0,86,27));
-				numberLetters.setText("Le mot à trouver était " + mot);			  
+				clavierEnabled(true);	
+				
+				JOptionPane jop = new JOptionPane();
+		    	int option = jop.showConfirmDialog(null, 
+		    				"BIEN JOUÉ !! \r\n"
+		    			    + "Le mot a trouver était bien " + mot
+		    			    +"\r\n"
+		    				+ "Voulez-vous continuer à jouer ?", 
+		    				"confirmation", 
+		    				JOptionPane.YES_NO_OPTION, 
+		    				JOptionPane.QUESTION_MESSAGE);
+		    	
+		    	if(option ==  JOptionPane.OK_OPTION) {
+		    		System.out.println("confirmation - nv score :" + getScore());
+		    		System.out.println("confirmation - nv score cumul :" + controler.getScoreCumul());
+		    		System.out.println("confirmation - nv nb mot trouvé :" + controler.getNbWordFound());
+		    		
+		    		controler.resetGame(controler.getScoreCumul(), controler.getNbWordFound());
+		    	} else if (option == JOptionPane.NO_OPTION) {
+		    		JOptionPane jop2 = new JOptionPane();
+		    		String name = (String)jop2.showInputDialog(null,
+		    			      "Quel est votre pseudo ?",
+		    			      "Votre pseudo", 
+		    			      JOptionPane.QUESTION_MESSAGE);
+		    		
+		    		if(name != null) {
+		    		
+		    			System.out.println("arret jeu - name :" + name);
+			    		System.out.println("arret jeu - score cumul :" + controler.getScoreCumul());
+			    		System.out.println("arret jeu - nb mot trouvé :" + controler.getNbWordFound());
+			    		
+		    			controler.recordGame(name, controler.getScoreCumul(), controler.getNbWordFound());
+		    		}
+		    	}
+		    	
+			} else if (state == 2) { 
+				//traiter le cas où le joueur a gagné au moins une partie
+				//mais perd cette fois-ci
+				if(controler.getNbWordFound() > 0) {
+					clavierEnabled(false);
+					gameOver.setVisible(true);
+					
+					JOptionPane jop3 = new JOptionPane();
+		    		String name = (String)jop3.showInputDialog(null,
+		    			      "Quel est votre pseudo ?",
+		    			      "Votre pseudo", 
+		    			      JOptionPane.QUESTION_MESSAGE);
+		    		
+		    		if(name != null ) {
+		    		
+		    			System.out.println("arret jeu - name :" + name);
+			    		System.out.println("arret jeu - score cumul :" + controler.getScoreCumul());
+			    		System.out.println("arret jeu - nb mot trouvé :" + controler.getNbWordFound());
+			    		
+		    			controler.recordGame(name, controler.getScoreCumul(), controler.getNbWordFound());
+		    		}
+					
+				} else {
+					clavierEnabled(false);
+					gameOver.setVisible(true);
+				}
 			}			
 		}
 	
@@ -147,25 +226,38 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 		return score;
 	}
 	
+	public int getNbLetters() {
+		return nbLetters;
+	}
 	
+	public int getScoreCumul() {
+		return scoreCumul;
+	}
+	
+	public int getNbWordFound() {
+		return nbWordFound;
+	}
+		
 	//gère les actions selon le type de boutons
 	public class BoutonListener implements ActionListener {
 			
 			private JButton btn;
-			private Word word;
+			private Word wordButton;
 			private JLabel wordLabel;
 			private JLabel scoreLabel;
 			private JLabel hangManImage;
-			private int nbError;
+			private int nbL;
+			private int nbWF;
 			
 			//Constructeur
 			public BoutonListener (JButton btn, Word word, JLabel wordLabel, JLabel scoreLabel, JLabel hangManImage) {
 			
 				this.btn = btn;	
-				this.word = word;
+				this.wordButton = word;
 				this.wordLabel = wordLabel;
 				this.scoreLabel = scoreLabel;
 				this.hangManImage = hangManImage;
+				
 			}
 			
 			public String getBtn() {
@@ -177,11 +269,13 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 				
 				if(controler.getGameState() == 0) {
 				btn.setEnabled(false);
-				btn.setBackground(Color.LIGHT_GRAY);
 				controler.letterInWord(btn.getText());
 				wordGame = controler.getHideWord();
-				wordLabel.setText(wordGame);
+				wordLabel.setText(wordGame); 
 				score = controler.getScore();
+				scoreCumul = controler.getScoreCumul();
+				nbWF = controler.getNbWordFound();
+				nbL = controler.getNbLetters();
 				
 				if(score == 0) {
 					scoreLabel.setText("Votre score actuel : " + Integer.toString(getScore()) + " point");
@@ -189,10 +283,11 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 					scoreLabel.setText("Votre score actuel : " + Integer.toString(getScore()) + " points");
 				}
 				
-				ImageIcon image = controler.getUrlImage();
+				numberLetters.setText("mot à " + nbL + " lettres");
+				scoreCumulLabel.setText("Votre score cumulé : " + Integer.toString(scoreCumul)+ " points");
+				nbWordFoundLabel.setText("Nombre de mots trouvés : " + nbWF);
 				
-				System.out.println("nouveau score : " + getScore());
-				System.out.println("wordGame :"+ getWordGame());
+				ImageIcon image = controler.getUrlImage();
 				
 					if(image != null) {
 					
@@ -220,6 +315,7 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 		gameArea.setBackground(Color.WHITE);
 		gameArea.setPreferredSize(new Dimension(480, 150));
 		
+		
 		//insertion du layout BoxLayout dans le scorePanel
 		scorePanel.setLayout(new BoxLayout(scorePanel, BoxLayout.Y_AXIS));
 			
@@ -235,6 +331,7 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 		clavier.setBackground(Color.LIGHT_GRAY);
 		clavier.setLayout(buttons);
 		clavier.setPreferredSize(new Dimension(480,150));
+		clavierEnabled(true);
 		
 		//le JPanel wordPanel prend le modèle BorderLayout
 		this.wordPanel = wordPanel;
@@ -269,6 +366,7 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 		clavier.add(bLetter);
 		clavier.add(nLetter);
 		clavier.add(tiret);
+		clavierEnabled(true);
 						
 		//on instancie tous les objets nécessaires
 		Font font1 = new Font("Arial", Font.BOLD, 22);
@@ -276,12 +374,15 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 		Font font3 = new Font("Arial", Font.PLAIN, 14);
 		Font font4 = new Font("Arial", Font.BOLD, 16);
 		JLabel title = new JLabel(textTitle);
-		JLabel scoreLabel = new JLabel("Votre score actuel : "+ this.getScore() + " points");
-		JLabel scoreCumulLabel = new JLabel("Votre score cumulé :     points");
+		this.scoreLabel = new JLabel("Votre score actuel : "+ this.getScore() + " points");
+		this. scoreCumulLabel = new JLabel("Votre score cumulé : " + this.getScoreCumul() + " points");
 		JLabel wordLabel = new JLabel(wordGame);
-
-		JLabel numberLetters = new JLabel("mot à "+ word.getNumberLetters()+ " lettres");
-		this.numberLetters = numberLetters;//sauvegarde nouveau JLabel numberLetters
+		this.numberLetters = new JLabel("mot à "+ this.getNbLetters()+ " lettres");
+		
+		this.gameOver = new JLabel("Le mot à trouver était : " + word.getWord());
+		gameOver.setVisible(false);
+		
+		this.nbWordFoundLabel = new JLabel("Nombre de mots trouvés : " + controler.getNbWordFound());
 		
 		JLabel hangManImage = new JLabel(new ImageIcon ("images/pendu1.jpg"));
 		
@@ -310,6 +411,14 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 		Border espace6 = BorderFactory.createEmptyBorder(10, 0, 0, 0);
 		scoreCumulLabel.setBorder(espace6);
 		
+		//Mise en forme du nombre de mots trouvés
+		nbWordFoundLabel.setFont(font4);
+		nbWordFoundLabel.setForeground(new Color(85,23,209));
+		nbWordFoundLabel.setHorizontalAlignment(JLabel.LEFT);
+		nbWordFoundLabel.setVerticalAlignment(JLabel.CENTER);
+		Border espace7 = BorderFactory.createEmptyBorder(10, 0, 0, 0);
+		nbWordFoundLabel.setBorder(espace7);
+		
 		//Mise du mot caché
 		wordLabel.setFont(font2);
 		wordLabel.setHorizontalAlignment(JLabel.CENTER);
@@ -330,13 +439,16 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 		Border border = BorderFactory.createLineBorder(Color.DARK_GRAY,2,true);
 		//Border espace4 = BorderFactory.createEmptyBorder(0, 20, 0, 20);
 		hangManImage.setBorder(border);
-		//hangManImage.setBorder(espace4);
+		
+		//Mise en forme du label "gameOver"
+		gameOver.setFont(font3);
+		gameOver.setForeground(new Color(232,9,66));
+		gameOver.setHorizontalAlignment(JLabel.CENTER);
+		gameOver.setHorizontalAlignment(JLabel.CENTER);
 		
 		//DEBUT TEST DEV
 		System.out.println("line : "+ word.getLine());
 		System.out.println("word : " +word.getWord());
-		System.out.println("nb de lettres : " +word.getNumberLetters());
-		
 		
 		for(String str : word.getLetters()) {
 			System.out.println("lettre : "+ str);
@@ -345,6 +457,7 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 		
 		
 		hangManPanel.add(hangManImage);
+		this.hangManImage = hangManImage;
 		
 		scorePanel.add(scoreLabel);
 		scoreLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -352,9 +465,13 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 		scorePanel.add(scoreCumulLabel);
 		scoreCumulLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 		
+		scorePanel.add(nbWordFoundLabel);
+		nbWordFoundLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+		
 		wordPanel.setBackground(Color.white);
 		wordPanel.add(wordLabel, BorderLayout.CENTER);
 		wordPanel.add(numberLetters, BorderLayout.SOUTH);
+		wordPanel.add(gameOver, BorderLayout.NORTH);
 		
 		gameArea.add(wordPanel, BorderLayout.NORTH);
 		gameArea.add(clavier, BorderLayout.CENTER);
@@ -398,34 +515,34 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 	    this.setVisible(false);
 	}
 	
-	private void clavierEnabled() {
-		 	aLetter.setEnabled(false);
-		 	zLetter.setEnabled(false);
-			eLetter.setEnabled(false);
-			rLetter.setEnabled(false);
-			tLetter.setEnabled(false);
-			yLetter.setEnabled(false);
-			uLetter.setEnabled(false);
-			iLetter.setEnabled(false);
-			oLetter.setEnabled(false);
-			pLetter.setEnabled(false);
-			qLetter.setEnabled(false);
-			sLetter.setEnabled(false);
-			dLetter.setEnabled(false);
-			fLetter.setEnabled(false);
-			gLetter.setEnabled(false);
-			hLetter.setEnabled(false);
-			jLetter.setEnabled(false);
-			kLetter.setEnabled(false);
-			lLetter.setEnabled(false);
-			mLetter.setEnabled(false);
-			wLetter.setEnabled(false);
-			xLetter.setEnabled(false);
-			cLetter.setEnabled(false);
-			vLetter.setEnabled(false);
-			bLetter.setEnabled(false);
-			nLetter.setEnabled(false);
-			tiret.setEnabled(false);
+	private void clavierEnabled(boolean b) {
+		 	aLetter.setEnabled(b);
+		 	zLetter.setEnabled(b);
+			eLetter.setEnabled(b);
+			rLetter.setEnabled(b);
+			tLetter.setEnabled(b);
+			yLetter.setEnabled(b);
+			uLetter.setEnabled(b);
+			iLetter.setEnabled(b);
+			oLetter.setEnabled(b);
+			pLetter.setEnabled(b);
+			qLetter.setEnabled(b);
+			sLetter.setEnabled(b);
+			dLetter.setEnabled(b);
+			fLetter.setEnabled(b);
+			gLetter.setEnabled(b);
+			hLetter.setEnabled(b);
+			jLetter.setEnabled(b);
+			kLetter.setEnabled(b);
+			lLetter.setEnabled(b);
+			mLetter.setEnabled(b);
+			wLetter.setEnabled(b);
+			xLetter.setEnabled(b);
+			cLetter.setEnabled(b);
+			vLetter.setEnabled(b);
+			bLetter.setEnabled(b);
+			nLetter.setEnabled(b);
+			tiret.setEnabled(b);
 	}
 	
 }

@@ -61,7 +61,7 @@ public class Fenetre extends JFrame {
     this.setVisible(true);
      
 	}
-	
+			
 	private void initMenu() {
 		
 		//ajout des sous-menu au menu Fichiers
@@ -88,7 +88,7 @@ public class Fenetre extends JFrame {
 	public class DisplayNewGameListener implements ActionListener {
 
 		@Override
-		public void actionPerformed(ActionEvent arg0) {
+		public void actionPerformed(ActionEvent e) {
 		
 			//on lance un nouveau mot
 			gamePage = new GamePanel(new Word());

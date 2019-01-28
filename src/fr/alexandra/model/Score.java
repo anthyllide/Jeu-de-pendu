@@ -1,17 +1,14 @@
 package fr.alexandra.model;
 
-import fr.alexandra.controler.Controler;
-
 public class Score {
 	
 	private int nbError;
 	private int score;
-	private Controler controler;
-	
+
 	public Score() {
 		
 		this.score = 100;
-		this.controler = new Controler();		
+			
 	}
 	 
 	public int getNbError() {
@@ -52,8 +49,7 @@ public class Score {
 					break;
 		}
 		
-		return points;
-		
+		return points;		
 	}
 
 }

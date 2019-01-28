@@ -7,7 +7,9 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 
 import fr.alexandra.model.Score;
+import fr.alexandra.model.ScoreSerializer;
 import fr.alexandra.model.Word;
+import fr.alexandra.vue.GamePanel;
 import observer.Observable;
 import observer.Observer;
 
@@ -21,18 +23,82 @@ public class Controler implements Observable<Integer> {
 	private List <String> lettersNewWord = new <String> ArrayList();
 	private JLabel gameWord;
 	private int i = 1;
-	private int nbError = 0;
+	private int nbError;
+	private int nbWordFound = 0;
 	private ImageIcon urlImage;
 	private int score;
-	private int gameState = 0; //1 si gagné, 2 si perdu
-	private boolean gagne = false;
+	private int scoreCumul;
+	private int LastScoreCumul;
+	private int gameState; //0 si en cours de partie, 1 si gagné, 2 si perdu
 	private List<Observer<Integer>> observers = new ArrayList<>();
-	public Controler() {}
+	private int nbLetters;
+	private String playerName;
 	
-	public Controler(Word w) {
+	public Controler(Word w) { 
+		this.lettersTable = w.getLetters();
 		setHideWord(w);
+		this.nbLetters = w.getNumberLetters();
 		this.scoreObject = new Score();
 		this.score = scoreObject.getScore();
+		this.gameState = 0;
+		this.nbError = 0;
+		this.scoreCumul = 0;
+	}
+	
+	public Controler(Word w, int sc, int nbW) {
+		this.lettersTable = w.getLetters();
+		setHideWord(w);
+		this.nbLetters = w.getNumberLetters();
+		this.scoreObject = new Score();
+		this.score = scoreObject.getScore();
+		this.gameState = 0;
+		this.nbError = 0;
+		this.scoreCumul = sc;
+		this.LastScoreCumul = 0;
+		this.nbWordFound = nbW;
+		
+		System.out.println("new Controler  - score = " + getScore());
+		System.out.println("new controler - nb mots trouvés:" + getNbWordFound());
+		System.out.println("new controler - nv score cumule :" + getScoreCumul());
+	}
+	
+	//ré-initialise le jeu 
+	public void resetGame(int sC, int nbW) {
+		Word w = new Word();
+		setHideWord(w);
+		this.lettersTable = w.getLetters();
+		this.lettersNewWord = new <String> ArrayList();
+		this.scoreObject = new Score();
+		this.score = scoreObject.getScore();
+		this.urlImage = new ImageIcon("images/pendu1.jpg");
+		this.gameState = 0;
+		this.nbError = 0;
+		this.nbLetters = 0;
+		this.nbLetters = w.getNumberLetters();
+		this.scoreCumul = sC;
+		this.LastScoreCumul = sC;
+		this.nbWordFound = nbW;
+		
+		System.out.println("resetGame scoreCumul " + getScoreCumul());
+		System.out.println("resetGame NbWordFound " + getNbWordFound());
+		new GamePanel(w, getScoreCumul(), getNbWordFound());		
+	}
+	
+	public String getWordFound() {
+		String str = "";
+		for(int i = 0; i < lettersTable.size(); i++) {		
+			str += lettersTable.get(i);
+		}
+		
+		return str;
+	}
+	
+	public int getNbLetters() {
+		return nbLetters;
+	}
+	
+	public int getNbWordFound() {
+		return nbWordFound;
 	}
 	
 	public JLabel getGameWord() {
@@ -41,6 +107,10 @@ public class Controler implements Observable<Integer> {
 	
 	public int getScore() {
 		return score;
+	}
+	
+	public int getScoreCumul() {
+		return scoreCumul;
 	}
 	
 	public int getNbError() {
@@ -62,13 +132,13 @@ public class Controler implements Observable<Integer> {
 	//construit le mot caché lors d'une nouvelle partie 
 	public void setHideWord(Word word) {
 		
-		this.lettersTable = word.getLetters();
-		String str = " --- ";
+		//this.lettersTable = word.getLetters();
+		String str = " — ";
 		
 		while( i < lettersTable.size()) {
 			
 			i++;
-			str += " --- ";
+			str += " — ";
 		}
 		
 		this.hideWord = str;			
@@ -88,7 +158,7 @@ public class Controler implements Observable<Integer> {
 	//vérifie que la lettre sélectionnée par le joueur est dans le mot ou pas
 	//si la lettre fait partie du mot, elle ajoute la/les lettre(s) au mot
 	public void letterInWord (String letter) {
-			
+				
 	if(nbError <= 7) {
 		
 		//si le tableau de lettres contient la lettre sélectionnée et le tableau du mot caché est vide
@@ -97,16 +167,19 @@ public class Controler implements Observable<Integer> {
 			for(int j=0; j < lettersTable.size(); j++) {
 				
 				addLetters(j, letter);
-				this.hideWord = String.join(" ", lettersNewWord).toUpperCase();			
+				this.hideWord = String.join(" ", lettersNewWord).toUpperCase();	
+				calculScoreCumul();
+								
 				System.out.println("nouveau mot1 :" + hideWord);		
 			}
 		
-		//si le tableau de lettre contient la lettre choisie et le tableau du mot caché 
+		//si le tableau de lettres contient la lettre choisie et le tableau du mot caché 
 		//n'est pas vide (à partir de la deuxième lettre trouvée)	
 		} else if (lettersTable.contains(letter) && !lettersNewWord.isEmpty() || compareLetter(letter, lettersTable) && !lettersNewWord.isEmpty()) {
 					
 			for(int j=0; j < lettersTable.size(); j++) {
-				setLetters(j,letter);								
+				setLetters(j,letter);
+				calculScoreCumul();
 			}
 			
 			this.hideWord = String.join(" ",lettersNewWord).toUpperCase();
@@ -114,7 +187,11 @@ public class Controler implements Observable<Integer> {
 			
 			//si le joueur trouve le mot
 			if(lettersNewWord.equals(lettersTable)){
-				setGameState(1);
+				
+				calculScoreCumul();
+				++nbWordFound;
+				this.nbWordFound = getNbWordFound();				
+				setGameState(1);					
 			}
 			
 			System.out.println("nouveau mot2 :" + hideWord);
@@ -127,14 +204,12 @@ public class Controler implements Observable<Integer> {
 			changeImage(nbError);			
 			scoreObject.setScore(nbError);
 			this.score = scoreObject.getScore();
-			System.out.println("nombre d'erreurs :" + nbError);
-			System.out.println("nouveau score :" + score);
-			
+			calculScoreCumul();
+								
+			//le joueur a perdu
 			if(getNbError() == 7) {
 				setGameState(2);
-				System.out.println("perdu : " + getGameState());
-			}
-				
+			}			
 		}
 	}
 		
@@ -202,9 +277,9 @@ public class Controler implements Observable<Integer> {
 			
 			lettersNewWord.add(j,"À");
 			
-		} else if(lettersTable.get(j).equals("ï") && letter == "I") {
+		} else if(lettersTable.get(j).equals("Ï") && letter == "I") {
 			
-			lettersNewWord.add(j, "ï");
+			lettersNewWord.add(j, "Ï");
 			
 		} else if(lettersTable.get(j).equals("Î") && letter == "I") {
 			
@@ -235,7 +310,7 @@ public class Controler implements Observable<Integer> {
 			lettersNewWord.add(j, letter);												
 		} else {
 			
-			lettersNewWord.add(j,"---");
+			lettersNewWord.add(j,"—");
 		}	
 		
 	}
@@ -345,6 +420,18 @@ public class Controler implements Observable<Integer> {
 		String word = String.join(" ", lettersTable);
 		return word;
 	}
+	
+	private void calculScoreCumul() {
+		//si c'est la 1ère partie
+		if(nbWordFound == 0) {
+			this.scoreCumul = score;
+			this.LastScoreCumul = score;
+			
+		//à partir de la deuxième partie	
+		} else {
+			this.scoreCumul = (LastScoreCumul + score);	
+		}
+	}
 
 	@Override
 	public void addObserver(Observer <Integer> observer) {
@@ -358,5 +445,14 @@ public class Controler implements Observable<Integer> {
 	        }		
 	}
 	
+	public void recordGame(String name, int finalScore, int nbGaming) {
+		ScoreSerializer recording = new ScoreSerializer(name, finalScore, nbGaming);
+		
+		System.out.println("recordGame name : " + name);
+		System.out.println("recordGame name : " + finalScore);
+		System.out.println("recordGame name : " + nbGaming);
+		
+		recording.registerGame();
+	}
 			
 }
