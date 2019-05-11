@@ -2,6 +2,7 @@ package fr.alexandra.vue;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Font;
 
 import javax.swing.JLabel;
 import javax.swing.JTable;
@@ -15,9 +16,13 @@ public class CustomTableCellRenderer extends DefaultTableCellRenderer
     {
     	JLabel j = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, 
     			row, column); 
-    			 
-    	j.setHorizontalAlignment(JLabel.CENTER); 
-    	j.setForeground(Color.red); 				   			 
+    	
+    	Font font1 = new Font("Arial", Font.PLAIN, 14);
+    	
+    	j.setHorizontalAlignment(JLabel.CENTER);// centre les données de ton tableau
+    	j.setFont(font1);//applique le style font1
+    	table.setRowHeight(30);
+    	 					   			 
     	return j; 
   
     }

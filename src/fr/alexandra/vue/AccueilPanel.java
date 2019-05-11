@@ -36,7 +36,7 @@ public class AccueilPanel extends JPanel	 {
 		Font font1 = new Font("Arial", Font.BOLD, 20);
 		Font font2 = new Font("Arial",Font.CENTER_BASELINE, 12);
 		this.title = new JLabel("Bienvenue !");
-		this.image = new JLabel(new ImageIcon("images/accueil.jpg"));		
+		this.image = new JLabel(new ImageIcon("accueil.jpg"));		
 		this.speech1 = new JLabel(text1);
 		this.speech2 = new JLabel(text2);
 		this.speech3 = new JLabel(text3);

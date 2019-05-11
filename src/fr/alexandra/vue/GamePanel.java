@@ -3,17 +3,20 @@ package fr.alexandra.vue;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -27,7 +30,7 @@ import observer.Observer;
 public class GamePanel extends JPanel implements Observer<Integer> {
 	
 	private JLabel title;
-	private JLabel wordLabel;
+	private JLabel wordLabel; // affiche le mot 
 	private JLabel numberLetters;
 	private JLabel hangManImage;
 	private JLabel scoreLabel;
@@ -37,7 +40,6 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 	private String wordGame = "";
 	private Word word;
 	private Controler controler;
-	private Score scoreObject;
 	private int score;
 	private int scoreCumul;
 	private int nbError;
@@ -106,13 +108,9 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 		this.nbLetters = controler.getNbLetters();
 		this.scoreCumul = controler.getScoreCumul();
 		this.nbWordFound = 0;
+		this.gameOver = new JLabel("Le mot à trouver était : " + controler.getWordToFound());
+		gameOver.setVisible(false);
 			
-		System.out.println("mot à chercher bis : " + controler.getWordFound());
-		System.out.println("nb erreur bis :" + controler.getNbError());
-		System.out.println("Etat du jeu :" + controler.getGameState());
-		System.out.println("Constructeur label nb lettres :" + nbLetters);
-		System.out.println("Constructeur mot à trouver :" + word.getWord());
-		
 		controler.addObserver(this);
 		
 		displayGamePanel(word);
@@ -129,37 +127,46 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 		this.word = w;
 		this.nbWordFound = nbW;
 		this.nbLetters = controler.getNbLetters();
-		
+		this.wordLabel = new JLabel();
+		this.gameOver = new JLabel("Le mot à trouver était : " + controler.getWordToFound());	
+			
 		controler.addObserver(this);
+			
 		displayGamePanel(word);							
 	}
 	
 	 @Override
-		public void update(Integer state) {
+		public void update(Integer state) throws InterruptedException {
 		 	
-			String mot = controler.wordToFind();
+			String wordFound = controler.wordToFind();
+			String st = controler.getHideWord();
+			
 			Font font5 = new Font("Arial", Font.BOLD, 16);
 			
+			//le joueur gagne la partie
 			if(state == 1) {
 				
-				clavierEnabled(true);	
+				clavierEnabled(true);
+				gameOver.setText("BRAVO !! Le mot était bien " + wordFound + " ." );
+				gameOver.setVisible(true);
 				
+				//pause de 1s avant d'afficher la popup
+				Thread.sleep(1000);
 				JOptionPane jop = new JOptionPane();
 		    	int option = jop.showConfirmDialog(null, 
 		    				"BIEN JOUÉ !! \r\n"
-		    			    + "Le mot a trouver était bien " + mot
+		    			    + "Le mot à trouver était bien " + wordFound
 		    			    +"\r\n"
 		    				+ "Voulez-vous continuer à jouer ?", 
 		    				"confirmation", 
 		    				JOptionPane.YES_NO_OPTION, 
 		    				JOptionPane.QUESTION_MESSAGE);
 		    	
+		    	//si oui, on réinitialise le jeu
 		    	if(option ==  JOptionPane.OK_OPTION) {
-		    		System.out.println("confirmation - nv score :" + getScore());
-		    		System.out.println("confirmation - nv score cumul :" + controler.getScoreCumul());
-		    		System.out.println("confirmation - nv nb mot trouvé :" + controler.getNbWordFound());
-		    		
+		    		gameOver.setVisible(false);
 		    		controler.resetGame(controler.getScoreCumul(), controler.getNbWordFound());
+		    	//sinon on lui demande son pseudo et on enregistre son score
 		    	} else if (option == JOptionPane.NO_OPTION) {
 		    		JOptionPane jop2 = new JOptionPane();
 		    		String name = (String)jop2.showInputDialog(null,
@@ -169,43 +176,58 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 		    		
 		    		if(name != null) {
 		    		
-		    			System.out.println("arret jeu - name :" + name);
-			    		System.out.println("arret jeu - score cumul :" + controler.getScoreCumul());
-			    		System.out.println("arret jeu - nb mot trouvé :" + controler.getNbWordFound());
-			    		
 		    			controler.recordGame(name, controler.getScoreCumul(), controler.getNbWordFound());
 		    		}
 		    	}
 		    	
 			} else if (state == 2) { 
-				//traiter le cas où le joueur a gagné au moins une partie
+				//le cas où le joueur a gagné au moins une partie
 				//mais perd cette fois-ci
 				if(controler.getNbWordFound() > 0) {
 					clavierEnabled(false);
+					gameOver.setText("PERDU - Le mot à trouver était : " + wordFound);
 					gameOver.setVisible(true);
 					
+					//pause avant d'afficher la popup
+					Thread.sleep(1000);
+					
 					JOptionPane jop3 = new JOptionPane();
+					JOptionPane jop4 = new JOptionPane();
+					
 		    		String name = (String)jop3.showInputDialog(null,
 		    			      "Quel est votre pseudo ?",
 		    			      "Votre pseudo", 
 		    			      JOptionPane.QUESTION_MESSAGE);
 		    		
+		    		//si le joueur saisit son nom
 		    		if(name != null ) {
-		    		
-		    			System.out.println("arret jeu - name :" + name);
-			    		System.out.println("arret jeu - score cumul :" + controler.getScoreCumul());
-			    		System.out.println("arret jeu - nb mot trouvé :" + controler.getNbWordFound());
-			    		
+		    					    		
 		    			controler.recordGame(name, controler.getScoreCumul(), controler.getNbWordFound());
-		    		}
-					
-				} else {
-					clavierEnabled(false);
-					gameOver.setVisible(true);
+		    			
+		    			searchWordMeaning(jop4, wordFound);
+		    				    							
+		    		} else {
+		    			clavierEnabled(false);
+		    			gameOver.setText("PERDU - Le mot à trouver était : " + wordFound);
+		    			gameOver.setVisible(true);										
 				}
-			}			
+		    		
+		    //si le joueur perd dès la première partie		
+			} else {
+				clavierEnabled(false);
+				gameOver.setText("PERDU - Le mot à trouver était : " + wordFound);
+				gameOver.setVisible(true);
+				
+				//pause avant d'afficher la popup
+				Thread.sleep(1000);
+				
+				JOptionPane jop5 = new JOptionPane();
+				
+				searchWordMeaning(jop5, wordFound);				
+			}
 		}
-	
+	 }
+	 	
 	public void setWordGame() {
 		this.wordGame = controler.getHideWord();
 	}
@@ -214,8 +236,8 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 		return wordGame;
 	}
 	
-	public void setWordLabel() {
-			wordLabel.setText("perdu");
+	public void setWordLabel(String str) {
+			this.wordLabel.setText(str);
 	}
 		
 	public JLabel getWordLabel() {
@@ -267,9 +289,14 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				
-				if(controler.getGameState() == 0) {
+				if(controler.getGameState() == 0 ) {
 				btn.setEnabled(false);
-				controler.letterInWord(btn.getText());
+				try {
+					controler.letterInWord(btn.getText());
+				} catch (InterruptedException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 				wordGame = controler.getHideWord();
 				wordLabel.setText(wordGame); 
 				score = controler.getScore();
@@ -292,9 +319,29 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 					if(image != null) {
 					
 						hangManImage.setIcon(new ImageIcon(image.getImage()));				
-					}						
+					}
+					
 				}			
 			}
+	}
+	
+	//gère la recherche du sens du mot
+	private void searchWordMeaning(JOptionPane jop, String w) {
+		int option = jop.showConfirmDialog(null, 
+				"Voulez-vous savoir le sens du mot " + w +" ?"
+			    +"\r\n", 
+				"confirmation", 
+				JOptionPane.YES_NO_OPTION, 
+				JOptionPane.QUESTION_MESSAGE);
+		
+		//si oui, on lance le navigateur pour rechercher le sens du mot sur Wikitionary
+		if(option ==  JOptionPane.OK_OPTION) {
+			
+			word.wikitionary(w);
+		//sinon tant pis!	
+		} else if (option == JOptionPane.NO_OPTION) {
+			jop.showMessageDialog(null, "Tant pis pour vous !", "Alert",JOptionPane.WARNING_MESSAGE);
+		}
 	}
 	
 	//gère l'affichage du GamePanel
@@ -379,7 +426,7 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 		JLabel wordLabel = new JLabel(wordGame);
 		this.numberLetters = new JLabel("mot à "+ this.getNbLetters()+ " lettres");
 		
-		this.gameOver = new JLabel("Le mot à trouver était : " + word.getWord());
+		//affiche le mot qui était à trouver
 		gameOver.setVisible(false);
 		
 		this.nbWordFoundLabel = new JLabel("Nombre de mots trouvés : " + controler.getNbWordFound());
@@ -423,7 +470,7 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 		wordLabel.setFont(font2);
 		wordLabel.setHorizontalAlignment(JLabel.CENTER);
 		wordLabel.setVerticalAlignment(JLabel.CENTER);
-		Border espace2 = BorderFactory.createEmptyBorder(30, 0, 10, 0);
+		Border espace2 = BorderFactory.createEmptyBorder(30, 0, 20, 0);
 		wordLabel.setBorder(espace2);
 		
 		//Mise en forme de l'indication nombre de lettres
@@ -437,7 +484,6 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 		hangManImage.setHorizontalAlignment(JLabel.CENTER);
 		hangManImage.setHorizontalAlignment(JLabel.CENTER);
 		Border border = BorderFactory.createLineBorder(Color.DARK_GRAY,2,true);
-		//Border espace4 = BorderFactory.createEmptyBorder(0, 20, 0, 20);
 		hangManImage.setBorder(border);
 		
 		//Mise en forme du label "gameOver"
@@ -447,12 +493,12 @@ public class GamePanel extends JPanel implements Observer<Integer> {
 		gameOver.setHorizontalAlignment(JLabel.CENTER);
 		
 		//DEBUT TEST DEV
-		System.out.println("line : "+ word.getLine());
+		/*System.out.println("line : "+ word.getLine());
 		System.out.println("word : " +word.getWord());
 		
 		for(String str : word.getLetters()) {
 			System.out.println("lettre : "+ str);
-		}
+		}*/
 		//FIN TEST DEV  
 		
 		

@@ -32,8 +32,9 @@ public class Controler implements Observable<Integer> {
 	private int gameState; //0 si en cours de partie, 1 si gagné, 2 si perdu
 	private List<Observer<Integer>> observers = new ArrayList<>();
 	private int nbLetters;
-	private String playerName;
+	private String wordToFound;
 	
+	//constructeur pour la première partie
 	public Controler(Word w) { 
 		this.lettersTable = w.getLetters();
 		setHideWord(w);
@@ -43,8 +44,10 @@ public class Controler implements Observable<Integer> {
 		this.gameState = 0;
 		this.nbError = 0;
 		this.scoreCumul = 0;
+		this.wordToFound = w.getWord();
 	}
 	
+	//constructeur utilisé pour les autres parties
 	public Controler(Word w, int sc, int nbW) {
 		this.lettersTable = w.getLetters();
 		setHideWord(w);
@@ -56,10 +59,8 @@ public class Controler implements Observable<Integer> {
 		this.scoreCumul = sc;
 		this.LastScoreCumul = 0;
 		this.nbWordFound = nbW;
-		
-		System.out.println("new Controler  - score = " + getScore());
-		System.out.println("new controler - nb mots trouvés:" + getNbWordFound());
-		System.out.println("new controler - nv score cumule :" + getScoreCumul());
+		this.wordToFound = w.getWord();
+
 	}
 	
 	//ré-initialise le jeu 
@@ -78,10 +79,13 @@ public class Controler implements Observable<Integer> {
 		this.scoreCumul = sC;
 		this.LastScoreCumul = sC;
 		this.nbWordFound = nbW;
-		
-		System.out.println("resetGame scoreCumul " + getScoreCumul());
-		System.out.println("resetGame NbWordFound " + getNbWordFound());
+		this.wordToFound = "";
+
 		new GamePanel(w, getScoreCumul(), getNbWordFound());		
+	}
+	
+	public String getWordToFound() {
+		return wordToFound;
 	}
 	
 	public String getWordFound() {
@@ -148,7 +152,7 @@ public class Controler implements Observable<Integer> {
 		return gameState;
 	}
 		
-	public void setGameState(int value) {
+	public void setGameState(int value) throws InterruptedException {
 		
 		this.gameState = value;		
 			
@@ -157,20 +161,17 @@ public class Controler implements Observable<Integer> {
 	
 	//vérifie que la lettre sélectionnée par le joueur est dans le mot ou pas
 	//si la lettre fait partie du mot, elle ajoute la/les lettre(s) au mot
-	public void letterInWord (String letter) {
+	public void letterInWord (String letter) throws InterruptedException {
 				
 	if(nbError <= 7) {
 		
 		//si le tableau de lettres contient la lettre sélectionnée et le tableau du mot caché est vide
 		if(lettersTable.contains(letter) && lettersNewWord.isEmpty() || compareLetter(letter, lettersTable) && lettersNewWord.isEmpty()) {
 			
-			for(int j=0; j < lettersTable.size(); j++) {
-				
+			for(int j=0; j < lettersTable.size(); j++) {			
 				addLetters(j, letter);
 				this.hideWord = String.join(" ", lettersNewWord).toUpperCase();	
-				calculScoreCumul();
-								
-				System.out.println("nouveau mot1 :" + hideWord);		
+				calculScoreCumul();		
 			}
 		
 		//si le tableau de lettres contient la lettre choisie et le tableau du mot caché 
@@ -193,9 +194,6 @@ public class Controler implements Observable<Integer> {
 				this.nbWordFound = getNbWordFound();				
 				setGameState(1);					
 			}
-			
-			System.out.println("nouveau mot2 :" + hideWord);
-			System.out.println("compare " + String.join(" ",lettersTable).toUpperCase());
 			
 			//si le joueur sélectionne une lettre n'appartenant pas au tableau de lettres	
 		} else {
@@ -247,6 +245,9 @@ public class Controler implements Observable<Integer> {
 		return false;
 	}
 	
+	
+	
+	
 	//Ajoute une/ou plusieurs lettre(s) à la première bonne tentative
 	private void addLetters(int j, String letter) {
 		
@@ -262,7 +263,7 @@ public class Controler implements Observable<Integer> {
 			
 			lettersNewWord.add(j,"Ê");
 		
-		} else if (lettersTable.get(j).equals("Ê") && letter == "E"){	
+		} else if (lettersTable.get(j).equals("Ë") && letter == "E"){	
 			
 			lettersNewWord.add(j,"Ë");
 		
@@ -378,7 +379,7 @@ public class Controler implements Observable<Integer> {
 		} 
 	}
 	//change l'image du pendu quand le joueur ne saisit pas les bonnes lettres
-	private void changeImage(int nbError) {
+	public void changeImage(int nbError) {
 		
 		switch (nbError) {
 			case 1 : this.urlImage = new ImageIcon("images/pendu2.jpg");
@@ -439,19 +440,15 @@ public class Controler implements Observable<Integer> {
 	}
 
 	@Override
-	public void notifyObservers(Integer data) {
+	public void notifyObservers(Integer data) throws InterruptedException {
 		 for (Observer<Integer> observer : observers) {
 	            observer.update(data);
 	        }		
 	}
 	
+	//enregistre la partie
 	public void recordGame(String name, int finalScore, int nbGaming) {
-		ScoreSerializer recording = new ScoreSerializer(name, finalScore, nbGaming);
-		
-		System.out.println("recordGame name : " + name);
-		System.out.println("recordGame name : " + finalScore);
-		System.out.println("recordGame name : " + nbGaming);
-		
+		ScoreSerializer recording = new ScoreSerializer(name, finalScore, nbGaming);			
 		recording.registerGame();
 	}
 			
